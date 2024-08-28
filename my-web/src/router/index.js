@@ -14,6 +14,16 @@ const routes = [
     name: '',
     component: () => import('../views/HealthInfo.vue')
   },
+  {
+    path: '/Detail',
+    name: '',
+    component: () => import('../views/Detail.vue')
+  },
+  {
+    path: '/Advice',
+    name: '',
+    component: () => import('../views/Advice.vue')
+  },
 ]
 
 // 防止连续点击多次路由报错

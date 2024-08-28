@@ -13,50 +13,74 @@
             <p>暂无过敏史</p>
           </div>
         </div>
-        <button class="advice-button">健康生活建议</button>
+        <button class="advice-button" @click="showAdvice">健康生活建议</button>
       </div>
+
+      <!-- 弹出 Advice.vue 组件 -->
+      <div v-if="isAdviceVisible" class="advice-container">
+        <Advice />
+      </div>
+
       <div class="temperature-card">
         <h3 class="title">体温</h3>
         <span class="status normal">正常</span>
-        <p class="temperature">36.5°</p>
+        <p class="temperature" @mouseover="enlargeIcon('temperature')" @mouseleave="resetIcon('temperature')">36.5°</p>
       </div>
       <div class="health-cards">
         <div class="health-card blood-pressure-card">
           <h3 class="title">血压</h3>
           <span class="status high">偏高</span>
-          <p class="pressure"><span class="high-systolic">130</span>/80</p>
-          <a href="#" class="detail">查看详细数据 ></a>
+          <p class="pressure" @mouseover="enlargeIcon('pressure')" @mouseleave="resetIcon('pressure')"><span class="high-systolic">130</span>/80</p>
+          <router-link
+              :to="{ path: '/Detail', query: { title:'血压' } }"
+              class="detail"
+          >查看详细数据 ></router-link>
         </div>
         <div class="health-card heart-rate-card">
           <h3 class="title">心率</h3>
           <span class="status normal">正常</span>
-          <p class="rate">92</p>
-          <a href="#" class="detail">查看详细数据 ></a>
+          <p class="rate" @mouseover="enlargeIcon('rate')" @mouseleave="resetIcon('rate')">92</p>
+          <router-link
+              :to="{ path: '/Detail', query: { title:'心率' } }"
+              class="detail"
+          >查看详细数据 ></router-link>
         </div>
         <div class="health-card pulse-card">
           <h3 class="title">脉搏</h3>
           <span class="status normal">正常</span>
-          <p class="pulse">85</p>
-          <a href="#" class="detail">查看详细数据 ></a>
+          <p class="pulse" @mouseover="enlargeIcon('pulse')" @mouseleave="resetIcon('pulse')">85</p>
+          <router-link
+              :to="{ path: '/Detail', query: { title:'脉搏' } }"
+              class="detail"
+          >查看详细数据 ></router-link>
         </div>
         <div class="health-card sleep-quality-card">
           <h3 class="title">睡眠质量</h3>
           <span class="status good">优</span>
-          <p class="shallow-quality">浅睡5H</p>
-          <p class="deep-quality">深睡2.5H</p>
-          <a href="#" class="detail">查看详细数据 ></a>
+          <p class="shallow-quality" @mouseover="enlargeIcon('shallow-quality')" @mouseleave="resetIcon('shallow-quality')">浅睡5H</p>
+          <p class="deep-quality" @mouseover="enlargeIcon('deep-quality')" @mouseleave="resetIcon('deep-quality')">深睡2.5H</p>
+          <router-link
+              :to="{ path: '/Detail', query: { title:'睡眠质量' } }"
+              class="detail"
+          >查看详细数据 ></router-link>
         </div>
         <div class="health-card blood-sugar-card">
           <h3 class="title">血糖</h3>
           <span class="status normal">正常</span>
-          <p class="sugar">5.8MMOL/L</p>
-          <a href="#" class="detail">查看详细数据 ></a>
+          <p class="sugar" @mouseover="enlargeIcon('sugar')" @mouseleave="resetIcon('sugar')">5.8MMOL/L</p>
+          <router-link
+              :to="{ path: '/Detail', query: { title:'血糖' } }"
+              class="detail"
+          >查看详细数据 ></router-link>
         </div>
         <div class="health-card medication-card">
           <h3 class="title">用药清单</h3>
-          <p class="medicine">盐酸二甲双胍（降血糖）</p>
+          <p class="medicine" @mouseover="enlargeIcon('medicine')" @mouseleave="resetIcon('medicine')">盐酸二甲双胍（降血糖）</p>
           <p class="detail">饭后服用一日两次，每次0.5g</p>
-          <a href="#" class="list">清单 ></a>
+          <router-link
+              :to="{ path: '/Detail', query: { title:'用药清单' } }"
+              class="list"
+          >清单 ></router-link>
         </div>
       </div>
     </main>
@@ -67,11 +91,35 @@
 <script>
 import FooterComponent from '@/layout/FooterComponent.vue';
 import HeaderComponent from '@/layout/HeaderComponent.vue';
+import Advice from './Advice.vue';
 export default {
   name: 'HealthInfo',
   components: {
     HeaderComponent,
-    FooterComponent
+    FooterComponent,
+    Advice
+  },
+  data(){
+    return{
+      isAdviceVisible: false,
+    };
+  },
+  methods:{
+    showAdvice() {
+      this.isAdviceVisible = true;
+    },
+    enlargeIcon(iconClass) {
+      const element = document.querySelector(`.${iconClass}`);
+      if (element) {
+        element.style.transform = 'scale(1.3)';
+      }
+    },
+    resetIcon(iconClass) {
+      const element = document.querySelector(`.${iconClass}`);
+      if (element) {
+        element.style.transform = 'scale(1)';
+      }
+    },
   }
 }
 </script>
@@ -136,15 +184,16 @@ export default {
 }
 
 .profile-cases {
-  font-size: 20px;
+  font-size: 22px;
   position: relative;
-  left: 250px;
+  font-weight: bold;
+  left: 220px;
   top: -60px;
 }
 
 .advice-button {
   padding: 10px 20px;
-  background-color: #d97242;
+  background-color: #f78f54;
   color: #fff;
   border: none;
   border-radius: 20px;
@@ -154,6 +203,10 @@ export default {
   position: relative;
   left: -60px;
   font-size: 30px;
+}
+
+.advice-button:hover {
+  background-color: #d97242;
 }
 
 .temperature-card {
@@ -402,13 +455,14 @@ export default {
   font-size: 30px;
   position: relative;
   top: -40px;
+  left: 20px;
 }
 
 .medication-card .detail{
   font-size: 24px;
   color: #333;
   position: relative;
-  left: -10px;
+  left: 10px;
   top: -70px;
 }
 
@@ -441,11 +495,6 @@ export default {
   font-weight: bold;
 }
 
-.normal-diastolic {
-  color: #78c232;
-  font-weight: bold;
-}
-
 a {
   position: absolute;
   bottom: 15px;
@@ -458,4 +507,16 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+.advice-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+  background-color: white;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+}
+
 </style>

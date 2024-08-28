@@ -1,0 +1,58 @@
+version: "3.4"
+
+services:
+  mysql:
+    container_name: my-mysql
+    image: mysql:8
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-root}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+    volumes:
+      - mysql:/var/lib/mysql/
+      - ./sql/sql_init.sql:/docker-entrypoint-initdb.d/sql_init.sql:ro
+
+  server:
+    container_name: my-server
+    build:
+      context: ./my-server/
+    image: my-server
+    restart: unless-stopped
+    ports:
+      - "28080:28080"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      JAVA_OPTS:
+        ${JAVA_OPTS:-
+          -Xms512m
+          -Xmx512m
+          -Djava.security.egd=file:/dev/./urandom
+        }
+      ARGS:
+        --spring.datasource.url=${DATASOURCE_URL:-jdbc:mysql://my-mysql:3306/tripeasy?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true}
+        --spring.datasource.username=${DATASOURCE_USERNAME:-root}
+        --spring.datasource.password=${DATASOURCE_PASSWORD:-123456}
+    depends_on:
+      - mysql
+
+  web:
+    container_name: my-web
+    build:
+      context: ./my-web
+      args:
+        NODE_ENV:
+          ENV=${NODE_ENV:-production}
+          VUE_APP_TITLE=${VUE_APP_TITLE:-行易TripEasy}
+    image: my-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+
+volumes:
+  mysql:
+    driver: local

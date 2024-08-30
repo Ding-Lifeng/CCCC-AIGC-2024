@@ -26,6 +26,7 @@
 import FooterComponent from '@/layout/FooterComponent.vue';
 import HeaderComponent from '@/layout/HeaderComponent.vue';
 import { sendMessageToGpt } from '@/api/chatWithGpt';
+import { v4 as uuidv4 } from 'uuid';
 
 export default {
   name: 'Chat',
@@ -38,6 +39,7 @@ export default {
       isChatting: false,
       message: '',
       recognition: null, // 用于语音识别
+      sessionId: uuidv4(),
     };
   },
   methods: {
@@ -69,7 +71,7 @@ export default {
         console.log('识别到的语音内容:', this.message);
 
         if (this.message.trim() !== '') {
-          // this.sendMessage(); // 如果有内容，则发送消息
+          this.sendMessage(); // 如果有内容，则发送消息
         } else {
           console.log('本轮无语音输入，不发送消息');
         }
@@ -105,6 +107,7 @@ export default {
       const sessionId = this.getSessionId(); // 根据你的会话管理实现此函数
       try {
         const response = await sendMessageToGpt(this.message, sessionId);
+        console.log(response.data.content);
         this.speak(response.data.content); // 用语音输出GPT的响应
       } catch (error) {
         console.error('发送消息时出错:', error);

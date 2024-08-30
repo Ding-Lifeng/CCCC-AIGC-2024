@@ -25,7 +25,7 @@
 <script>
 import FooterComponent from '@/layout/FooterComponent.vue';
 import HeaderComponent from '@/layout/HeaderComponent.vue';
-import axios from "axios";
+import { sendMessageToGpt } from '@/api/chatWithGpt';
 
 export default {
   name: 'Chat',
@@ -36,119 +36,95 @@ export default {
   data() {
     return {
       isChatting: false,
-      mediaRecorder: null,
-      audioChunks: [],
+      message: '',
+      recognition: null, // 用于语音识别
     };
   },
   methods: {
-    async toggleChat() {
-      this.isChatting = !this.isChatting;
+    toggleChat() {
       if (this.isChatting) {
-        this.startRecording();
+        this.stopListening();
       } else {
-        this.stopRecording();
+        this.startListening();
+        this.isChatting = true;
       }
     },
-    async startRecording() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({audio: true});
-        this.mediaRecorder = new MediaRecorder(stream);
 
-        this.mediaRecorder.ondataavailable = (event) => {
-          this.audioChunks.push(event.data);
-        };
-
-        this.mediaRecorder.onstop = this.sendAudioData;
-
-        this.mediaRecorder.start();
-      } catch (error) {
-        console.error('Error accessing the microphone:', error);
-        alert('无法访问麦克风，请检查权限设置。');
+    // 启动语音识别
+    startListening() {
+      // 检查浏览器是否支持 WebSpeech API
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert('该浏览器不支持 WebSpeech API。');
+        return;
       }
-    },
-    stopRecording() {
-      if (this.mediaRecorder) {
-        this.mediaRecorder.stop();
-      }
-    },
-    async sendAudioData() {
-      const audioBlob = new Blob(this.audioChunks, {type: 'audio/wav'});
-      const formData = new FormData();
-      formData.append('file', audioBlob);
-      formData.append('model', 'whisper-1');
 
-      const maxRetries = 5; // 最大重试次数
-      let retryCount = 0;   // 当前重试次数
-      let success = false;
+      this.recognition = new SpeechRecognition();
+      this.recognition.lang = 'zh-CN'; // 识别中文
+      this.recognition.continuous = false;
+      this.recognition.interimResults = false;
 
-      while (retryCount < maxRetries && !success) {
-        try {
-          // 语音识别
-          const recognitionResponse = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              'Authorization': `Bearer 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`  // 替换为您的 OpenAI API 密钥
-            },
-          });
+      this.recognition.onresult = (event) => {
+        this.message = event.results[0][0].transcript;
+        console.log('识别到的语音内容:', this.message);
 
-          const recognizedText = recognitionResponse.data.text;
-
-          // 获取 ChatGPT 回复
-          const chatResponse = await axios.post('https://api.openai.com/v1/completions', {
-            model: 'text-davinci-003',
-            prompt: recognizedText,
-            max_tokens: 150,
-          }, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer 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`  // 替换为您的 OpenAI API 密钥
-            },
-          });
-
-          const chatText = chatResponse.data.choices[0].text.trim();
-
-          // TTS 转换
-          const synthesisResponse = await axios.post('https://api.openai.com/v1/tts/completions', {
-            text: chatText,
-            voice: 'zh-CN',
-          }, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer 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`  // 替换为您的 OpenAI API 密钥
-            },
-          });
-
-          const audioContent = synthesisResponse.data.audioContent;
-          const audioBlob = new Blob([audioContent], {type: 'audio/mp3'});
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const audio = new Audio(audioUrl);
-          audio.play();
-
-          success = true;  // 请求成功，退出循环
-        } catch (error) {
-          console.error('Error calling OpenAI API:', error);
-
-          if (error.response && error.response.status === 429) {
-            // 如果是 429 错误，等待一段时间再重试
-            const retryAfter = error.response.headers['retry-after'] || 1;
-            console.log(`429 Too Many Requests, retrying after ${retryAfter} seconds...`);
-            await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-          } else {
-            // 非 429 错误，抛出错误
-            throw error;
-          }
-
-          retryCount++;
+        if (this.message.trim() !== '') {
+          // this.sendMessage(); // 如果有内容，则发送消息
+        } else {
+          console.log('本轮无语音输入，不发送消息');
         }
-      }
+        this.message = '';   // 重置message
+      };
 
-      if (!success) {
-        console.error('Failed to call OpenAI API after multiple retries.');
-      } else {
-        this.audioChunks = [];
+      this.recognition.onerror = (event) => {
+          console.error('本轮语音识别错误:', event.error);
+      };
+
+      this.recognition.onend = () => {
+        if (this.isChatting) {
+          console.log('本轮语音识别结束，重新开始Listening。');
+          this.startListening();  // 语音识别结束时重新开始监听
+        }
+      };
+
+      this.recognition.start();
+    },
+
+    stopListening() {
+      if (this.recognition) {
+        this.recognition.stop();
       }
-    }
-  }
+      this.isChatting = false;  // 停止聊天
+      console.log('语音识别已停止');
+    },
+
+    // 发送消息并处理响应
+    async sendMessage() {
+      if (this.message.trim() === '') return;
+
+      const sessionId = this.getSessionId(); // 根据你的会话管理实现此函数
+      try {
+        const response = await sendMessageToGpt(this.message, sessionId);
+        this.speak(response.data.content); // 用语音输出GPT的响应
+      } catch (error) {
+        console.error('发送消息时出错:', error);
+      }
+    },
+
+    // 使用WebSpeech语音合成功能读取文本
+    speak(text) {
+      const synthesis = window.speechSynthesis;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'zh-CN'; // 使用中文语音合成
+      synthesis.speak(utterance);
+    },
+
+    // 获取会话ID的占位符函数
+    getSessionId() {
+      // 实现获取会话ID的逻辑
+      return 'session-id-placeholder';
+    },
+  },
 };
 </script>
 

@@ -8,17 +8,23 @@
           <h2 class="profile-name">李奶奶</h2>
           <p class="profile-age">73岁</p>
           <div class="profile-cases">
-            <p>轻度高血压</p>
-            <p>二型糖尿病</p>
-            <p>暂无过敏史</p>
+            <p v-for="(caseItem, index) in profileCases" :key="index">{{ caseItem }}</p>
           </div>
         </div>
         <button class="advice-button" @click="showAdvice">健康生活建议</button>
       </div>
 
+      <!-- 显示遮罩层 -->
+      <div v-if="isAdviceVisible" class="overlay"></div>
       <!-- 弹出 Advice.vue 组件 -->
       <div v-if="isAdviceVisible" class="advice-container">
-        <Advice />
+        <Advice @close="hideAdvice" />
+      </div>
+
+      <!-- 显示 Detail 组件 -->
+      <div v-if="isDetailVisible" class="overlay"></div>
+      <div v-if="isDetailVisible" class="detail-container">
+        <Detail @close="hideDetail" :title="detailData.title" :status="detailData.status" :value="detailData.value" />
       </div>
 
       <div class="temperature-card">
@@ -27,60 +33,42 @@
         <p class="temperature" @mouseover="enlargeIcon('temperature')" @mouseleave="resetIcon('temperature')">36.5°</p>
       </div>
       <div class="health-cards">
-        <div class="health-card blood-pressure-card">
+        <div class="health-card blood-pressure-card" @click="showDetail({ title: '血压', status: '偏高', value: '130/80' })">
           <h3 class="title">血压</h3>
           <span class="status high">偏高</span>
           <p class="pressure" @mouseover="enlargeIcon('pressure')" @mouseleave="resetIcon('pressure')"><span class="high-systolic">130</span>/80</p>
-          <router-link
-              :to="{ path: '/Detail', query: { title:'血压' } }"
-              class="detail"
-          >查看详细数据 ></router-link>
+          <div class="detail">查看详细数据 ></div>
         </div>
-        <div class="health-card heart-rate-card">
+        <div class="health-card heart-rate-card" @click="showDetail({ title: '心率', status: '正常', value: '92' })">
           <h3 class="title">心率</h3>
           <span class="status normal">正常</span>
           <p class="rate" @mouseover="enlargeIcon('rate')" @mouseleave="resetIcon('rate')">92</p>
-          <router-link
-              :to="{ path: '/Detail', query: { title:'心率' } }"
-              class="detail"
-          >查看详细数据 ></router-link>
+          <div class="detail">查看详细数据 ></div>
         </div>
-        <div class="health-card pulse-card">
+        <div class="health-card pulse-card" @click="showDetail({ title: '脉搏', status: '正常', value: '85' })">
           <h3 class="title">脉搏</h3>
           <span class="status normal">正常</span>
           <p class="pulse" @mouseover="enlargeIcon('pulse')" @mouseleave="resetIcon('pulse')">85</p>
-          <router-link
-              :to="{ path: '/Detail', query: { title:'脉搏' } }"
-              class="detail"
-          >查看详细数据 ></router-link>
+          <div class="detail">查看详细数据 ></div>
         </div>
-        <div class="health-card sleep-quality-card">
+        <div class="health-card sleep-quality-card" @click="showDetail({ title: '睡眠质量', status: '优', value: '浅睡5H，深度睡眠2.5H' })">
           <h3 class="title">睡眠质量</h3>
           <span class="status good">优</span>
           <p class="shallow-quality" @mouseover="enlargeIcon('shallow-quality')" @mouseleave="resetIcon('shallow-quality')">浅睡5H</p>
           <p class="deep-quality" @mouseover="enlargeIcon('deep-quality')" @mouseleave="resetIcon('deep-quality')">深睡2.5H</p>
-          <router-link
-              :to="{ path: '/Detail', query: { title:'睡眠质量' } }"
-              class="detail"
-          >查看详细数据 ></router-link>
+          <div class="detail">查看详细数据 ></div>
         </div>
-        <div class="health-card blood-sugar-card">
+        <div class="health-card blood-sugar-card" @click="showDetail({ title: '血糖', status: '正常', value: '5.8MMOL/L' })">
           <h3 class="title">血糖</h3>
           <span class="status normal">正常</span>
           <p class="sugar" @mouseover="enlargeIcon('sugar')" @mouseleave="resetIcon('sugar')">5.8MMOL/L</p>
-          <router-link
-              :to="{ path: '/Detail', query: { title:'血糖' } }"
-              class="detail"
-          >查看详细数据 ></router-link>
+          <div class="detail">查看详细数据 ></div>
         </div>
-        <div class="health-card medication-card">
+        <div class="health-card medication-card" @click="showDetail({ title: '药品名称', status: '盐酸二甲双胍（降血糖）', value: '如何服用，有何忌口，注意事项' })">
           <h3 class="title">用药清单</h3>
           <p class="medicine" @mouseover="enlargeIcon('medicine')" @mouseleave="resetIcon('medicine')">盐酸二甲双胍（降血糖）</p>
           <p class="detail">饭后服用一日两次，每次0.5g</p>
-          <router-link
-              :to="{ path: '/Detail', query: { title:'用药清单' } }"
-              class="list"
-          >清单 ></router-link>
+          <div class="list">清单 ></div>
         </div>
       </div>
     </main>
@@ -92,21 +80,36 @@
 import FooterComponent from '@/layout/FooterComponent.vue';
 import HeaderComponent from '@/layout/HeaderComponent.vue';
 import Advice from './Advice.vue';
+import Detail from './Detail.vue';
 export default {
   name: 'HealthInfo',
   components: {
     HeaderComponent,
     FooterComponent,
-    Advice
+    Advice,
+    Detail
   },
   data(){
     return{
       isAdviceVisible: false,
+      profileCases: ['轻度高血压', '二型糖尿病', '暂无过敏史'],
+      isDetailVisible: false,
+      detailData: {},
     };
   },
   methods:{
     showAdvice() {
       this.isAdviceVisible = true;
+    },
+    hideAdvice() {
+      this.isAdviceVisible = false;
+    },
+    showDetail(data) {
+      this.detailData = data;
+      this.isDetailVisible = true;
+    },
+    hideDetail() {
+      this.isDetailVisible = false;
     },
     enlargeIcon(iconClass) {
       const element = document.querySelector(`.${iconClass}`);
@@ -120,6 +123,28 @@ export default {
         element.style.transform = 'scale(1)';
       }
     },
+  },
+  created() {
+    // 处理初始的查询参数
+    if (this.$route.query.title) {
+      this.showDetail({
+        title: this.$route.query.title,
+        status: this.$route.query.status,
+        value: this.$route.query.value
+      });
+    }
+  },
+  watch: {
+    '$route'(to) {
+      // 监听路由变化时的查询参数
+      if (to.query.title) {
+        this.showDetail({
+          title: to.query.title,
+          status: to.query.status,
+          value: to.query.value
+        });
+      }
+    }
   }
 }
 </script>
@@ -508,7 +533,28 @@ a:hover {
   text-decoration: underline;
 }
 
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* 半透明黑色遮罩 */
+  z-index: 999; /* 确保遮罩层在其他内容之上 */
+}
+
 .advice-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+  background-color: white;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+}
+
+.detail-container {
   position: fixed;
   top: 50%;
   left: 50%;

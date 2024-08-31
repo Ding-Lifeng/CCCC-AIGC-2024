@@ -119,6 +119,7 @@ export default {
       const synthesis = window.speechSynthesis;
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'zh-CN'; // 使用中文语音合成
+      // 开始播放语音合成
       synthesis.speak(utterance);
     },
 

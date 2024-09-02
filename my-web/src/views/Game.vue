@@ -250,6 +250,7 @@ export default {
   background-color: #bbada0;
   border-radius: 10px;
   margin-bottom: 20px;
+  margin-top: 20px;
 }
 
 .cell {
@@ -266,7 +267,6 @@ export default {
 }
 
 .reset-button {
-  margin-top: -30px;
   padding: 10px 20px;
   font-size: 18px;
   background-color: #f78f54;
@@ -274,6 +274,8 @@ export default {
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  margin-top: 20px;
+  margin-bottom: 40px;
 }
 
 .reset-button:hover {

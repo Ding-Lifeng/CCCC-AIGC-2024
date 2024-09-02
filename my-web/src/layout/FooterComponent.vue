@@ -10,7 +10,7 @@
         <h3>常用链接</h3>
         <ul>
           <li><a href="#">首页</a></li>
-          <li><a href="#">大脑游戏</a></li>
+          <li><a href="#" @click="$router.push('/Game')">大脑游戏</a></li>
           <li><a href="#">运动引导</a></li>
           <li><a href="#" @click="$router.push('/HealthInfo')">健康提醒</a></li>
           <li><a href="#" @click="$router.push('/')">情景聊天</a></li>

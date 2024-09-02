@@ -6,11 +6,11 @@
       </div>
       <ul>
         <li><a href="#">首页</a></li>
-        <li><a href="#">大脑游戏</a></li>
+        <li><a href="#" @click="$router.push('/Game')">大脑游戏</a></li>
         <li><a href="#" @click="$router.push('/HealthInfo')">健康提醒</a></li>
         <li><a href="#">运动引导</a></li>
         <li><a href="#" @click="$router.push('/')">情景聊天</a></li>
-        <li><a href="#">科学验证</a></li>
+        <li><a href="#" @click="$router.push('/Poem')">科学验证</a></li>
         <li><a href="#">联系我们</a></li>
       </ul>
       <button @click="login">登录</button>

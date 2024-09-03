@@ -27,14 +27,17 @@
               :key="charIndex"
               class="poem-char"
           >
-            <input
-                v-if="char === '*'"
-                v-model="userInputArray[index][charIndex]"
-                type="text"
-                maxlength="1"
-                class="poem-input"
-            />
-            <span v-else>{{ char }}</span>
+            <template v-if="char === '*'">
+              <input
+                  v-model="userInputArray[index][charIndex]"
+                  type="text"
+                  maxlength="1"
+                  class="poem-input"
+              />
+            </template>
+            <template v-else>
+              {{ char }}
+            </template>
           </span>
         </div>
       </div>
@@ -45,6 +48,7 @@
     <div v-if="currentStage === 3" class="stage">
       <h2 class="stage-title">创作点评</h2>
       <p class="evaluation">{{ evaluation }}</p>
+      <button @click="restart" class="restart-button">再写一首</button>
     </div>
 
     <!-- 加载状态 -->
@@ -85,7 +89,9 @@ export default {
     },
     poemLines() {
       if (!this.poem) return [];
-      return this.poem.split(/(?<=[。，；！？：、“”‘’《》【】（）—])/);
+      return this.poem
+          .replace(/[\u3000\s]+(?=[。，；！？：、“”‘’《》【】（）—])/g, '') // 移除标点符号后的无意义空格
+          .split(/(?<=[。，；！？：、“”‘’《》【】（）—])/);
     },
   },
   watch: {
@@ -113,8 +119,37 @@ export default {
     async selectTheme(theme) {
       this.isLoading = true;
       try {
-        const response = await sendMessageToGpt(`获取主题为${theme}的诗，并挖空部分词语，挖空部分用符号*代替，仅回复诗词内容`, this.sessionId);
-        this.poem = response.data.content;
+        const response = await sendMessageToGpt(`写一首主题为${theme}的诗词，仅回复诗词内容`, this.sessionId);
+        const fullPoem = response.data.content.trim();
+        console.log('获取的完整诗句:', fullPoem);
+
+        const cleanedPoem = fullPoem
+            .replace(/\r?\n|\r/g, '')  // 移除换行符
+            .replace(/[\u3000\s]+(?=[。，；！？：、“”‘’《》【】（）—])/g, ''); // 移除标点符号后的无意义空格
+
+        // 将诗句转换为字符数组
+        const poemArray = cleanedPoem.split('');
+
+        // 计算需要挖空的字符数量
+        const numberOfBlanks = Math.min(10, Math.floor(poemArray.length * 0.2)); // 至少挖空10个字符或20%字符
+
+        // 使用 Set 确保挖空位置不重复
+        const blankIndexes = new Set();
+
+        while (blankIndexes.size < numberOfBlanks) {
+          const randomIndex = Math.floor(Math.random() * poemArray.length);
+          if (poemArray[randomIndex] !== '*' && !/[\u3000\s。，；！？：、“”‘’《》【】（）—]/.test(poemArray[randomIndex])) {
+            blankIndexes.add(randomIndex);
+          }
+        }
+
+        // 挖空字符并用 '*' 替代
+        blankIndexes.forEach(index => {
+          poemArray[index] = '*';
+        });
+
+        // 重新组合挖空后的诗句
+        this.poem = poemArray.join('');
         this.currentStage = 2;
         this.isLoading = false;
       } catch (error) {
@@ -140,6 +175,12 @@ export default {
         this.isLoading = false;
       }
     },
+    restart() {
+      this.currentStage = 1;
+      this.poem = null;
+      this.userInputArray = [];
+      this.evaluation = '';
+    },
   },
 };
 </script>
@@ -152,7 +193,7 @@ export default {
   align-items: center;
   width: 100%;
   height: 100vh;
-  background-color: #faf8ef;
+  background-color: #fdece4;
   padding: 20px;
 
 }
@@ -293,5 +334,21 @@ export default {
   font-size: 24px;
   text-align: left; /* 左对齐 */
   margin: 0 auto 40px;
+}
+
+.restart-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #f78f54;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 40px;
+}
+
+.evaluate-button:hover {
+  background-color: #d97242;
 }
 </style>

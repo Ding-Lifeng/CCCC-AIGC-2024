@@ -52,9 +52,7 @@ export default {
       }
     },
 
-    // 启动语音识别
     startListening() {
-      // 检查浏览器是否支持 WebSpeech API
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
         alert('该浏览器不支持 WebSpeech API。');
@@ -62,30 +60,30 @@ export default {
       }
 
       this.recognition = new SpeechRecognition();
-      this.recognition.lang = 'zh-CN'; // 识别中文
+      this.recognition.lang = 'zh-CN';
       this.recognition.continuous = false;
       this.recognition.interimResults = false;
 
       this.recognition.onresult = (event) => {
         this.message = event.results[0][0].transcript;
-        console.log('识别到的语音内容:', this.message);
+        console.log('识别到的语音内容', this.message);
 
         if (this.message.trim() !== '') {
-          this.sendMessage(); // 如果有内容，则发送消息
+          this.sendMessage();
         } else {
           console.log('本轮无语音输入，不发送消息');
         }
-        this.message = '';   // 重置message
+        this.message = '';
       };
 
       this.recognition.onerror = (event) => {
-          console.error('本轮语音识别错误:', event.error);
+        console.error('本轮语音识别错误:', event.error);
       };
 
       this.recognition.onend = () => {
-        if (this.isChatting) {
+        if (this.isChatting && !this.isPaused) {
           console.log('本轮语音识别结束，重新开始Listening。');
-          this.startListening();  // 语音识别结束时重新开始监听
+          this.startListening();
         }
       };
 
@@ -96,36 +94,66 @@ export default {
       if (this.recognition) {
         this.recognition.stop();
       }
-      this.isChatting = false;  // 停止聊天
+
+      // 停止语音合成
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel(); // 停止当前正在播放的语音
+        console.log('语音合成已停止');
+      }
+
+      this.isChatting = false;
       console.log('语音识别已停止');
     },
 
-    // 发送消息并处理响应
+    // 暂停语音识别，不完全停止
+    pauseListening() {
+      if (this.recognition) {
+        this.recognition.abort();  // 终止当前识别，但保留识别对象
+        this.isPaused = true;      // 标记为暂停状态
+        console.log('语音识别已暂停');
+      }
+    },
+
+    // 恢复语音识别
+    resumeListening() {
+      if (this.isPaused) {
+        this.isPaused = false;
+        this.startListening();
+        console.log('语音识别已恢复');
+      }
+    },
+
     async sendMessage() {
       if (this.message.trim() === '') return;
 
-      const sessionId = this.getSessionId(); // 根据你的会话管理实现此函数
+      const sessionId = this.getSessionId();
       try {
         const response = await sendMessageToGpt(this.message, sessionId);
         console.log(response.data.content);
-        this.speak(response.data.content); // 用语音输出GPT的响应
+        this.speak(response.data.content);
       } catch (error) {
         console.error('发送消息时出错:', error);
       }
     },
 
-    // 使用WebSpeech语音合成功能读取文本
     speak(text) {
       const synthesis = window.speechSynthesis;
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'zh-CN'; // 使用中文语音合成
-      // 开始播放语音合成
+      utterance.lang = 'zh-CN';
+
+      // 暂停语音识别
+      this.pauseListening();
+
+      utterance.onend = () => {
+        console.log('语音合成播放完毕');
+        // 延迟1秒后恢复语音识别
+        this.resumeListening();
+      };
+
       synthesis.speak(utterance);
     },
 
-    // 获取会话ID的占位符函数
     getSessionId() {
-      // 实现获取会话ID的逻辑
       return 'session-id-placeholder';
     },
   },

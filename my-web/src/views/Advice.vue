@@ -42,6 +42,9 @@ export default {
   },
   methods: {
     closeAdvice() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // 停止所有正在进行的语音合成
+      }
       this.$emit('close');
     },
     playAdvice(text) {
